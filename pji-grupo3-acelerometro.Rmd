@@ -9,3 +9,19 @@ output:
       after_body: psbfix.html
   pdf_document: default
 ---
+
+## Bibliotecas
+
+```{r}
+
+```
+
+## Importando arquivos
+
+```{r}
+df <- read.table("Grupo3 Acelerometro Controle.txt", header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+
+# Exibir as primeiras linhas do dataframe
+head(df)
+
+```
