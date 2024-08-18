@@ -1,1 +1,1 @@
-# PJI-Engenharia-Biom-dica
+# pji-grupo3-acelerometro
