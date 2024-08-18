@@ -1,13 +1,13 @@
 ---
 title: "PJI - acelerometro"
-author: "Breno / Brenda / Fernanda / Maria Eduarda"
+author: "Breno, Brenda, Fernanda, Maria Eduarda"
 date: "18/08/2024"
 output: 
+  pdf_document: default
   html_document:
     highlight: tango
     includes:
       after_body: psbfix.html
-  pdf_document: default
 ---
 
 ## Bibliotecas
