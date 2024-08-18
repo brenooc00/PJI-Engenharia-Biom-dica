@@ -1,8 +1,7 @@
 ---
-title: "PJI - acelerometro"
-author: "Breno, Brenda, Fernanda, Maria Eduarda"
-date: "18/08/2024"
-output: 
+title: 'PSB: Lista do Módulo 1'
+author: "Breno Oliveira Costa"
+output:
   pdf_document: default
   html_document:
     highlight: tango
@@ -12,16 +11,73 @@ output:
 
 ## Bibliotecas
 
-```{r}
-
+```{r message=FALSE, warning=FALSE}
+library(ggplot2)
+library(dygraphs)
+library(dplyr)
+library(patchwork)
 ```
 
 ## Importando arquivos
 
 ```{r}
-df <- read.table("Grupo3 Acelerometro Controle.txt", header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+df1_controle <- read.table("Grupo3 Acelerometro Controle.txt", header = TRUE, sep = "\t")
 
-# Exibir as primeiras linhas do dataframe
-head(df)
+df1_problema <- read.table("Grupo3 Acelerometro Problema Motor.txt", header = TRUE, sep = "\t")
+```
+
+## Conversão de dados
+
+```{r}
+#Convertendo o separador decimal de ',' para '.'
+df1_controle <- as.data.frame(lapply(df1_controle, function(x) as.numeric(gsub(",", ".", x))))
+
+df1_problema <- as.data.frame(lapply(df1_problema, function(x) as.numeric(gsub(",", ".", x))))
+
+#Convertendo DataFrame para classe númerica
+df1_controle[] <- lapply(df1_controle, as.numeric)
+df1_problema[] <- lapply(df1_problema, as.numeric)
+```
+
+## Plotando sinal
+
+```{r}
+#Verificando resolução temporal
+#dt_controle <- (df1_controle$Tempo[2] - df1_controle$Tempo[1])
+#dt_problema <- (df1_problema$Tempo[2] - df1_problema$Tempo[1])
+
+#Criando vetor de tempo
+#t_controle <- seq(from = 0, length.out = max(df1_controle$Tempo), by = dt_controle)
+#t_problema <- seq(from = 0, length.out = max(df1_problema$Tempo), by = dt_problema)
+
+plot_controle_C1 <- ggplot2::ggplot() + geom_line(data = df1_controle, aes(x = Tempo, y = C1), color = "red") + xlab("Tempo(s)") + ylab("Amplitude") + labs(title = "Indivíduo 1")
+
+plot_controle_C2 <- ggplot2::ggplot() + geom_line(data = df1_controle, aes(x = Tempo, y = C2), color = "salmon") + xlab("Tempo(s)") + ylab("Amplitude") + labs(title = "Indivíduo 2")
+
+plot_controle_C3 <- ggplot2::ggplot() + geom_line(data = df1_controle, aes(x = Tempo, y = C3), color = "green") + xlab("Tempo(s)") + ylab("Amplitude") + labs(title = "Indivíduo 3")
+
+plot_controle_C4 <- ggplot2::ggplot() + geom_line(data = df1_controle, aes(x = Tempo, y = C4), color = "brown") + xlab("Tempo(s)") + ylab("Amplitude") + labs(title = "Indivíduo 4")
+
+plot_controle_C5 <- ggplot2::ggplot() + geom_line(data = df1_controle, aes(x = Tempo, y = C5), color = "blue") + xlab("Tempo(s)") + ylab("Amplitude") + labs(title = "Indivíduo 5")
+
+(plot_controle_C1 | plot_controle_C2)/
+(plot_controle_C3 | plot_controle_C4)/
+(plot_controle_C5)
+
+
+for (col in names(df1_problema)[-1]) {
+  # Criar um gráfico para cada coluna
+  dygraph(data.frame(time = df1_problema$Tempo, value = df1_problema[[col]]), main = paste("Gráfico de", col))|>
+    dyAxis("x", label = "Tempo (s)") |>
+    dyAxis("y", label = "Amplitude") |>
+    dyRangeSelector(dateWindow = c()) |> dyCSS(textConnection(" .dygraph-title{color : black;}")) |>
+    print()  # Para visualizar os gráficos no console do R
+}
+
+```
+
+## Mostrando espectro do sinal
+
+```{r}
 
 ```
