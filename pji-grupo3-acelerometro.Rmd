@@ -1,7 +1,8 @@
 ---
-title: 'PSB: Lista do Módulo 1'
-author: "Breno Oliveira Costa"
-output:
+title: "PJI - acelerometro"
+author: "Breno, Brenda, Fernanda, Maria Eduarda"
+date: "18/08/2024"
+output: 
   pdf_document: default
   html_document:
     highlight: tango
@@ -42,14 +43,6 @@ df1_problema[] <- lapply(df1_problema, as.numeric)
 ## Plotando sinal
 
 ```{r}
-#Verificando resolução temporal
-#dt_controle <- (df1_controle$Tempo[2] - df1_controle$Tempo[1])
-#dt_problema <- (df1_problema$Tempo[2] - df1_problema$Tempo[1])
-
-#Criando vetor de tempo
-#t_controle <- seq(from = 0, length.out = max(df1_controle$Tempo), by = dt_controle)
-#t_problema <- seq(from = 0, length.out = max(df1_problema$Tempo), by = dt_problema)
-
 plot_controle_C1 <- ggplot2::ggplot() + geom_line(data = df1_controle, aes(x = Tempo, y = C1), color = "red") + xlab("Tempo(s)") + ylab("Amplitude") + labs(title = "Indivíduo 1")
 
 plot_controle_C2 <- ggplot2::ggplot() + geom_line(data = df1_controle, aes(x = Tempo, y = C2), color = "salmon") + xlab("Tempo(s)") + ylab("Amplitude") + labs(title = "Indivíduo 2")
@@ -76,8 +69,30 @@ for (col in names(df1_problema)[-1]) {
 
 ```
 
-## Mostrando espectro do sinal
+## Observando espectro do sinal
 
 ```{r}
+fft_signal <- function(time, signal){
+  dt <- time[2] - time[1] #Resolução temporal
+  fs <- 1/dt #Frequência
+  rfs <- fs/length(time) #Resolução de frequência
+  final_frequency <- (length(time)-1) * rfs #Frequência final
+  ff <- seq(from = 0, to = final_frequency, by = rfs) #Vetor de frequência
+  signal_fft <- fft(signal) #Transformada de Fourier
+  singal_mag <- mod(signal_fft) #Magnitude do sinal
+  signal_theta <- atan2(Im(signal_fft), Re(signal_fft)) #Fase do sinal
+  
+}
 
+
+#dygraph(data.frame(ff,mag), main = "Espectro de Amplitude", 
+ #xlab = "frequencia (Hz)", ylab = "amplitude") |> 
+ #dyRangeSelector()|> 
+ #dyEvent(fs_500/2, label='SIMETRIA', labelLoc='top') 
+
+
+#dygraph(data.frame(ff,theta),main = "Espectro de Fase", 
+ #xlab = "frequencia (Hz)", ylab = "fase")|> 
+ #dyRangeSelector()|> 
+ #dyEvent(fs_500/2, label='SIMETRIA', labelLoc='top')
 ```
