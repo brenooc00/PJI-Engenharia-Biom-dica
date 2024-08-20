@@ -83,28 +83,30 @@ fft_signal <- function(time, signal, name){
   signal_fft <- fft(signal) #Transformada de Fourier
   signal_mag <- Mod(signal_fft) #Magnitude do sinal
   signal_theta <- atan2(Im(signal_fft), Re(signal_fft)) #Fase do sinal
+  df <- data.frame(ff = ff[1:(length(ff)/2)],mag = signal_mag[1:(length(signal_mag)/2)], theta = signal_theta[1:(length(signal_theta)/2)])
   
-  plot_mag <- ggplot2::ggplot(data.frame(ff, signal_mag)) + geom_line(aes(x = ff, y = signal_mag), color = "green") + xlab("Frequência (Hz)") + ylab("Magnitude") + labs(title = paste("Espectro de amplitude do sinal", name)) + coord_cartesian(xlim = c(0,final_frequency/2)) 
+  plot_mag <- ggplot2::ggplot(df) + geom_line(aes(x = ff, y = mag), color = "green") + xlab("Frequência (Hz)") + ylab("Magnitude") + labs(title = paste("Espectro de amplitude do sinal", name))
   
-  #plot_theta <- ggplot2::ggplot(data.frame(ff, signal_theta)) + geom_line(aes(x = ff, y = signal_theta), color = "green") + xlab("Frequência (Hz)") + ylab("Fase") + labs(title = paste("Fase do sinal", name)) + coord_cartesian(xlim = c(0,final_frequency/2)) 
+  #plot_theta <- ggplot2::ggplot(df) + geom_line(aes(x = ff, y = theta), color = "green") + xlab("Frequência (Hz)") + ylab("Fase") + labs(title = paste("Fase do sinal", name))  
   
   print(plot_mag)
   #print(plot_theta)
+  return (df)
 }
 
 #Amplitude do sinal grupo controle
-fft_signal(df1_controle$Tempo, df1_controle$C1, "(grupo controle C1)")
-fft_signal(df1_controle$Tempo, df1_controle$C2, "(grupo controle C2)")
-fft_signal(df1_controle$Tempo, df1_controle$C3, "(grupo controle C3)")
-fft_signal(df1_controle$Tempo, df1_controle$C4, "(grupo controle C4)")
-fft_signal(df1_controle$Tempo, df1_controle$C5, "(grupo controle C5)")
+fft_C1 <- fft_signal(df1_controle$Tempo, df1_controle$C1, "(grupo controle C1)")
+fft_C2 <- fft_signal(df1_controle$Tempo, df1_controle$C2, "(grupo controle C2)")
+fft_C3 <- fft_signal(df1_controle$Tempo, df1_controle$C3, "(grupo controle C3)")
+fft_C4 <- fft_signal(df1_controle$Tempo, df1_controle$C4, "(grupo controle C4)")
+fft_C5 <- fft_signal(df1_controle$Tempo, df1_controle$C5, "(grupo controle C5)")
 
 #Amplitude do sinal grupo problema motor
-fft_signal(df1_problema$Tempo, df1_problema$DP1, "(grupo problema motor DP1)")
-fft_signal(df1_problema$Tempo, df1_problema$DP2, "(grupo problema motor DP2)")
-fft_signal(df1_problema$Tempo, df1_problema$DP3, "(grupo problema motor DP3)")
-fft_signal(df1_problema$Tempo, df1_problema$DP4, "(grupo problema motor DP4)")
-fft_signal(df1_problema$Tempo, df1_problema$DP5, "(grupo problema motor DP5)")
+fft_DP1 <- fft_signal(df1_problema$Tempo, df1_problema$DP1, "(grupo problema motor DP1)")
+fft_DP2 <- fft_signal(df1_problema$Tempo, df1_problema$DP2, "(grupo problema motor DP2)")
+fft_DP3 <- fft_signal(df1_problema$Tempo, df1_problema$DP3, "(grupo problema motor DP3)")
+fft_DP4 <- fft_signal(df1_problema$Tempo, df1_problema$DP4, "(grupo problema motor DP4)")
+fft_DP5 <- fft_signal(df1_problema$Tempo, df1_problema$DP5, "(grupo problema motor DP5)")
 ```
 
 ## Cálculo de amplitude MAV - Mean Absolute Value
@@ -134,9 +136,54 @@ MAV_DP5 <- MAV(df1_problema$DP5, "DP5 (grupo problema motor)")
 ## Cálculo de frequência - F80
 
 ```{r}
+
+F80 <- function(signal_mag,name){
+  #Espectro de potência
+  power_spectrum <- signal_mag^2
+  #Sequência unitária
+  ff_unit <- seq(0,1, length.out = length(signal_mag)) * (length(signal_mag)/2)
+  #Densidade espectral (PSD)
+  psd <- power_spectrum/sum(power_spectrum)
+  #Cumulativo da PSD
+  cumulative_psd <- cumsum(psd)
+  #Identificação da F80
+  F80_detected <- ff_unit[which(cumulative_psd >= 0.80)[1]]
+  print(paste("Frequência F80 do sinal", name, ":", round(F80_detected,3), "Hz"))
+  return(F80_detected)
+}
+
+F80_C1 <- F80(fft_C1$mag, "C1 (grupo controle)")
+F80_C2 <- F80(fft_C2$mag, "C2 (grupo controle)")
+F80_C3 <- F80(fft_C3$mag, "C3 (grupo controle)")
+F80_C4 <- F80(fft_C4$mag, "C4 (grupo controle)")
+F80_C5 <- F80(fft_C5$mag, "C5 (grupo controle)")
+print("")
+F80_DP1 <- F80(fft_DP1$mag, "DP1 (grupo controle)")
+F80_DP2 <- F80(fft_DP2$mag, "DP2 (grupo controle)")
+F80_DP3 <- F80(fft_DP3$mag, "DP3 (grupo controle)")
+F80_DP4 <- F80(fft_DP4$mag, "DP4 (grupo controle)")
+F80_DP5 <- F80(fft_DP5$mag, "DP5 (grupo controle)")
 ```
 
 ## Cálculo estátisco - Diferença interquartil
 
 ```{r}
+dif_quartil <- function(signal_mag, name){
+  quartil <- quantile(signal_mag)
+  inter_quartil <- quartil[4] - quartil[2]
+  print(paste("Diferença interquartil do sinal",name,":", round(inter_quartil,3)))
+  return(inter_quartil)
+}
+
+dif_quartil_C1 <- dif_quartil(fft_C1$mag, "C1 (grupo controle)")
+dif_quartil_C2 <- dif_quartil(fft_C2$mag, "C2 (grupo controle)")
+dif_quartil_C3 <- dif_quartil(fft_C3$mag, "C3 (grupo controle)")
+dif_quartil_C4 <- dif_quartil(fft_C4$mag, "C4 (grupo controle)")
+dif_quartil_C5 <- dif_quartil(fft_C5$mag, "C5 (grupo controle)")
+print("")
+dif_quartil_DP1 <- dif_quartil(fft_DP1$mag, "DP1 (grupo problema motor)")
+dif_quartil_DP2 <- dif_quartil(fft_DP2$mag, "DP2 (grupo problema motor)")
+dif_quartil_DP3 <- dif_quartil(fft_DP3$mag, "DP3 (grupo problema motor)")
+dif_quartil_DP4 <- dif_quartil(fft_DP4$mag, "DP4 (grupo problema motor)")
+dif_quartil_DP5 <- dif_quartil(fft_DP5$mag, "DP5 (grupo problema motor)")
 ```
