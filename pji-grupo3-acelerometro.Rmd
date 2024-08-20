@@ -110,7 +110,25 @@ fft_signal(df1_problema$Tempo, df1_problema$DP5, "(grupo problema motor DP5)")
 ## Cálculo de amplitude MAV - Mean Absolute Value
 
 ```{r}
+MAV <- function(signal, name){
+  MAV_signal <- mean(abs(signal))
+  print(paste("Resultado MAV do sinal ", name, ":", round(MAV_signal,3)))
+  return (MAV_signal)
+}
 
+MAV_C1 <- MAV(df1_controle$C1, "C1 (grupo controle)")
+MAV_C2 <- MAV(df1_controle$C2, "C2 (grupo controle)")
+MAV_C3 <- MAV(df1_controle$C3, "C3 (grupo controle)")
+MAV_C4 <- MAV(df1_controle$C4, "C4 (grupo controle)")
+MAV_C5 <- MAV(df1_controle$C5, "C5 (grupo controle)")
+
+print("")
+
+MAV_DP1 <- MAV(df1_problema$DP1, "DP1 (grupo problema motor)")
+MAV_DP2 <- MAV(df1_problema$DP2, "DP2 (grupo problema motor)")
+MAV_DP3 <- MAV(df1_problema$DP3, "DP3 (grupo problema motor)")
+MAV_DP4 <- MAV(df1_problema$DP4, "DP4 (grupo problema motor)")
+MAV_DP5 <- MAV(df1_problema$DP5, "DP5 (grupo problema motor)")
 ```
 
 ## Cálculo de frequência - F80
