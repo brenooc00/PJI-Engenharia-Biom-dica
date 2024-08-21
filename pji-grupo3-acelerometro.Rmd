@@ -13,10 +13,10 @@ output:
 ## Bibliotecas
 
 ```{r message=FALSE, warning=FALSE}
-library(ggplot2)
+#library(ggplot2)
 library(dygraphs)
-library(dplyr)
-library(patchwork)
+#library(dplyr)
+#library(patchwork)
 ```
 
 # Módulo 1
