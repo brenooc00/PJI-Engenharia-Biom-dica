@@ -45,28 +45,21 @@ df1_problema[] <- lapply(df1_problema, as.numeric)
 ## Plotando sinal
 
 ```{r}
-plot_controle_C1 <- ggplot2::ggplot() + geom_line(data = df1_controle, aes(x = Tempo, y = C1), color = "red") + xlab("Tempo(s)") + ylab("Amplitude") + labs(title = "Indivíduo 1")
 
-plot_controle_C2 <- ggplot2::ggplot() + geom_line(data = df1_controle, aes(x = Tempo, y = C2), color = "salmon") + xlab("Tempo(s)") + ylab("Amplitude") + labs(title = "Indivíduo 2")
-
-plot_controle_C3 <- ggplot2::ggplot() + geom_line(data = df1_controle, aes(x = Tempo, y = C3), color = "green") + xlab("Tempo(s)") + ylab("Amplitude") + labs(title = "Indivíduo 3")
-
-plot_controle_C4 <- ggplot2::ggplot() + geom_line(data = df1_controle, aes(x = Tempo, y = C4), color = "brown") + xlab("Tempo(s)") + ylab("Amplitude") + labs(title = "Indivíduo 4")
-
-plot_controle_C5 <- ggplot2::ggplot() + geom_line(data = df1_controle, aes(x = Tempo, y = C5), color = "blue") + xlab("Tempo(s)") + ylab("Amplitude") + labs(title = "Indivíduo 5")
-
-(plot_controle_C1 | plot_controle_C2)/
-(plot_controle_C3 | plot_controle_C4)/
-(plot_controle_C5)
-
+for (col in names(df1_controle)[-1]) {
+  # Criar um gráfico para cada coluna
+  dygraph(data.frame(time = df1_controle$Tempo, value = df1_controle[[col]]), main = paste("Gráfico de", col))|>
+    dyAxis("x", label = "Tempo (s)") |>
+    dyAxis("y", label = "Amplitude") |>
+    dyRangeSelector(dateWindow = c()) |> print()  # Para visualizar os gráficos no console do R
+}
 
 for (col in names(df1_problema)[-1]) {
   # Criar um gráfico para cada coluna
   dygraph(data.frame(time = df1_problema$Tempo, value = df1_problema[[col]]), main = paste("Gráfico de", col))|>
     dyAxis("x", label = "Tempo (s)") |>
     dyAxis("y", label = "Amplitude") |>
-    dyRangeSelector(dateWindow = c()) |> dyCSS(textConnection(" .dygraph-title{color : black;}")) |>
-    print()  # Para visualizar os gráficos no console do R
+    dyRangeSelector(dateWindow = c()) |> print()  # Para visualizar os gráficos no console do R
 }
 
 ```
@@ -83,30 +76,35 @@ fft_signal <- function(time, signal, name){
   signal_fft <- fft(signal) #Transformada de Fourier
   signal_mag <- Mod(signal_fft) #Magnitude do sinal
   signal_theta <- atan2(Im(signal_fft), Re(signal_fft)) #Fase do sinal
-  df <- data.frame(ff = ff[1:(length(ff)/2)],mag = signal_mag[1:(length(signal_mag)/2)], theta = signal_theta[1:(length(signal_theta)/2)])
+  df <- data.frame(ff = ff[1:(length(ff)/2)],mag = signal_mag[1:(length(signal_mag)/2)])
+  #, theta = signal_theta[1:(length(signal_theta)/2)]
   
-  plot_mag <- ggplot2::ggplot(df) + geom_line(aes(x = ff, y = mag), color = "green") + xlab("Frequência (Hz)") + ylab("Magnitude") + labs(title = paste("Espectro de amplitude do sinal", name))
+  plot_mag <- dygraph(df, main = paste("Gráfico de", name))|>
+    dyAxis("x", label = "Frequência (Hz)") |>
+    dyAxis("y", label = "Amplitude") |>
+    dyRangeSelector(dateWindow = c(-1,25)) |> print()
   
   #plot_theta <- ggplot2::ggplot(df) + geom_line(aes(x = ff, y = theta), color = "green") + xlab("Frequência (Hz)") + ylab("Fase") + labs(title = paste("Fase do sinal", name))  
   
-  print(plot_mag)
-  #print(plot_theta)
+  
+  #plot_all <- plot_mag/plot_theta
+  #print(plot_mag)
   return (df)
 }
 
 #Amplitude do sinal grupo controle
-fft_C1 <- fft_signal(df1_controle$Tempo, df1_controle$C1, "(grupo controle C1)")
-fft_C2 <- fft_signal(df1_controle$Tempo, df1_controle$C2, "(grupo controle C2)")
-fft_C3 <- fft_signal(df1_controle$Tempo, df1_controle$C3, "(grupo controle C3)")
-fft_C4 <- fft_signal(df1_controle$Tempo, df1_controle$C4, "(grupo controle C4)")
-fft_C5 <- fft_signal(df1_controle$Tempo, df1_controle$C5, "(grupo controle C5)")
+fft_C1 <- fft_signal(df1_controle$Tempo, df1_controle$C1, "C1 (grupo controle)")
+fft_C2 <- fft_signal(df1_controle$Tempo, df1_controle$C2, "C2 (grupo controle)")
+fft_C3 <- fft_signal(df1_controle$Tempo, df1_controle$C3, "C3 (grupo controle)")
+fft_C4 <- fft_signal(df1_controle$Tempo, df1_controle$C4, "C4 (grupo controle)")
+fft_C5 <- fft_signal(df1_controle$Tempo, df1_controle$C5, "C5 (grupo controle)")
 
 #Amplitude do sinal grupo problema motor
-fft_DP1 <- fft_signal(df1_problema$Tempo, df1_problema$DP1, "(grupo problema motor DP1)")
-fft_DP2 <- fft_signal(df1_problema$Tempo, df1_problema$DP2, "(grupo problema motor DP2)")
-fft_DP3 <- fft_signal(df1_problema$Tempo, df1_problema$DP3, "(grupo problema motor DP3)")
-fft_DP4 <- fft_signal(df1_problema$Tempo, df1_problema$DP4, "(grupo problema motor DP4)")
-fft_DP5 <- fft_signal(df1_problema$Tempo, df1_problema$DP5, "(grupo problema motor DP5)")
+fft_DP1 <- fft_signal(df1_problema$Tempo, df1_problema$DP1, "DP1 (grupo problema motor)")
+fft_DP2 <- fft_signal(df1_problema$Tempo, df1_problema$DP2, "DP2 (grupo problema motor)")
+fft_DP3 <- fft_signal(df1_problema$Tempo, df1_problema$DP3, "DP3 (grupo problema motor)")
+fft_DP4 <- fft_signal(df1_problema$Tempo, df1_problema$DP4, "DP4 (grupo problema motor)")
+fft_DP5 <- fft_signal(df1_problema$Tempo, df1_problema$DP5, "DP5 (grupo problema motor)")
 ```
 
 ## Cálculo de amplitude MAV - Mean Absolute Value
@@ -175,15 +173,15 @@ dif_quartil <- function(signal_mag, name){
   return(inter_quartil)
 }
 
-dif_quartil_C1 <- dif_quartil(fft_C1$mag, "C1 (grupo controle)")
-dif_quartil_C2 <- dif_quartil(fft_C2$mag, "C2 (grupo controle)")
-dif_quartil_C3 <- dif_quartil(fft_C3$mag, "C3 (grupo controle)")
-dif_quartil_C4 <- dif_quartil(fft_C4$mag, "C4 (grupo controle)")
-dif_quartil_C5 <- dif_quartil(fft_C5$mag, "C5 (grupo controle)")
+dif_quartil_C1 <- dif_quartil(df1_controle$C1, "C1 (grupo controle)")
+dif_quartil_C2 <- dif_quartil(df1_controle$C2, "C2 (grupo controle)")
+dif_quartil_C3 <- dif_quartil(df1_controle$C3, "C3 (grupo controle)")
+dif_quartil_C4 <- dif_quartil(df1_controle$C4, "C4 (grupo controle)")
+dif_quartil_C5 <- dif_quartil(df1_controle$C5, "C5 (grupo controle)")
 print("")
-dif_quartil_DP1 <- dif_quartil(fft_DP1$mag, "DP1 (grupo problema motor)")
-dif_quartil_DP2 <- dif_quartil(fft_DP2$mag, "DP2 (grupo problema motor)")
-dif_quartil_DP3 <- dif_quartil(fft_DP3$mag, "DP3 (grupo problema motor)")
-dif_quartil_DP4 <- dif_quartil(fft_DP4$mag, "DP4 (grupo problema motor)")
-dif_quartil_DP5 <- dif_quartil(fft_DP5$mag, "DP5 (grupo problema motor)")
+dif_quartil_DP1 <- dif_quartil(df1_problema$DP1, "DP1 (grupo problema motor)")
+dif_quartil_DP2 <- dif_quartil(df1_problema$DP2, "DP2 (grupo problema motor)")
+dif_quartil_DP3 <- dif_quartil(df1_problema$DP3, "DP3 (grupo problema motor)")
+dif_quartil_DP4 <- dif_quartil(df1_problema$DP4, "DP4 (grupo problema motor)")
+dif_quartil_DP5 <- dif_quartil(df1_problema$DP5, "DP5 (grupo problema motor)")
 ```
