@@ -308,11 +308,11 @@ t.test(DIF_QUARTIL ~ Grupo, data = atributos, var.equal = TRUE)
 #Se Pr(>F) for maior do que 0.05, não há diferença estatistica entre os grupos
 #Se Pr(>F) for menor do que 0.05, há diferença estatistica entre os grupos
 
-#summary(aov(atributos$DIF_QUARTIL~atributos$Grupo))
+summary(aov(atributos$DIF_QUARTIL~atributos$Grupo))
 
 #Sabendo se há ou não diferença entre os grupos, aplicamos o teste de Tukey para verificar o p-valor entre cada grupo (p adj)
 
-#TukeyHSD(aov(atributos$DIF_QUARTIL~atributos$Grupo))
+TukeyHSD(aov(atributos$DIF_QUARTIL~atributos$Grupo))
 ```
 
 ## Teste de hipótese - Distribuição não-normal
@@ -330,14 +330,14 @@ wilcox.test(MAV ~ Grupo, data = atributos)
 #Se o p-value for maior do que 0.05, não há diferença estatistica entre os grupos
 #Se o p-value for menor do que 0.05, há diferença estatistica entre os grupos
 
-#kruskal.test(F80~Grupo, data = atributos)
-#kruskal.test(MAV~Grupo, data = atributos)
+kruskal.test(F80~Grupo, data = atributos)
+kruskal.test(MAV~Grupo, data = atributos)
 
 #Podemos verificar a diferença entre cada par de grupo individualmente
 #Utilizando o teste de Wilcoxon pareado (que fará a comparação par-a-par dos grupos)
 
-#pairwise.wilcox.test(atributos$F80,atributos$Grupo,p.adjust.method="bonferroni")
+pairwise.wilcox.test(atributos$F80,atributos$Grupo,p.adjust.method="bonferroni")
 
-#pairwise.wilcox.test(atributos$MAV,atributos$Grupo,p.adjust.method="bonferroni")
+pairwise.wilcox.test(atributos$MAV,atributos$Grupo,p.adjust.method="bonferroni")
 
 ```
