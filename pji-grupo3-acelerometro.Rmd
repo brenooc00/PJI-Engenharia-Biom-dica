@@ -13,9 +13,9 @@ output:
 ## Bibliotecas
 
 ```{r message=FALSE, warning=FALSE}
-#library(ggplot2)
 library(dygraphs)
-#library(dplyr)
+#library(ggplot2)
+library(dplyr)
 #library(patchwork)
 ```
 
@@ -135,32 +135,30 @@ MAV_DP5 <- MAV(df1_problema$DP5, "DP5 (grupo problema motor)")
 
 ```{r}
 
-F80 <- function(signal_mag,name){
+F80 <- function(signal_mag,signal_freq, name){
   #Espectro de potência
   power_spectrum <- signal_mag^2
-  #Sequência unitária
-  ff_unit <- seq(0,1, length.out = length(signal_mag)) * (length(signal_mag)/2)
-  #Densidade espectral (PSD)
-  psd <- power_spectrum/sum(power_spectrum)
-  #Cumulativo da PSD
-  cumulative_psd <- cumsum(psd)
+  #Energia total
+  power_total <- sum(power_spectrum)
+  #Acumulativo da energia
+  cumulative_power <- cumsum(power_spectrum)
   #Identificação da F80
-  F80_detected <- ff_unit[which(cumulative_psd >= 0.80)[1]]
+  F80_detected <- signal_freq[which(cumulative_power >= (0.80*power_total))[1]]
   print(paste("Frequência F80 do sinal", name, ":", round(F80_detected,3), "Hz"))
   return(F80_detected)
 }
 
-F80_C1 <- F80(fft_C1$mag, "C1 (grupo controle)")
-F80_C2 <- F80(fft_C2$mag, "C2 (grupo controle)")
-F80_C3 <- F80(fft_C3$mag, "C3 (grupo controle)")
-F80_C4 <- F80(fft_C4$mag, "C4 (grupo controle)")
-F80_C5 <- F80(fft_C5$mag, "C5 (grupo controle)")
+F80_C1 <- F80(fft_C1$mag, fft_C1$ff, "C1 (grupo controle)")
+F80_C2 <- F80(fft_C2$mag, fft_C2$ff, "C2 (grupo controle)")
+F80_C3 <- F80(fft_C3$mag, fft_C3$ff, "C3 (grupo controle)")
+F80_C4 <- F80(fft_C4$mag, fft_C4$ff, "C4 (grupo controle)")
+F80_C5 <- F80(fft_C5$mag, fft_C5$ff, "C5 (grupo controle)")
 print("")
-F80_DP1 <- F80(fft_DP1$mag, "DP1 (grupo controle)")
-F80_DP2 <- F80(fft_DP2$mag, "DP2 (grupo controle)")
-F80_DP3 <- F80(fft_DP3$mag, "DP3 (grupo controle)")
-F80_DP4 <- F80(fft_DP4$mag, "DP4 (grupo controle)")
-F80_DP5 <- F80(fft_DP5$mag, "DP5 (grupo controle)")
+F80_DP1 <- F80(fft_DP1$mag, fft_DP1$ff, "DP1 (grupo controle)")
+F80_DP2 <- F80(fft_DP2$mag, fft_DP2$ff, "DP2 (grupo controle)")
+F80_DP3 <- F80(fft_DP3$mag, fft_DP3$ff, "DP3 (grupo controle)")
+F80_DP4 <- F80(fft_DP4$mag, fft_DP4$ff, "DP4 (grupo controle)")
+F80_DP5 <- F80(fft_DP5$mag, fft_DP5$ff, "DP5 (grupo controle)")
 ```
 
 ## Cálculo estátisco - Diferença interquartil
@@ -184,4 +182,58 @@ dif_quartil_DP2 <- dif_quartil(df1_problema$DP2, "DP2 (grupo problema motor)")
 dif_quartil_DP3 <- dif_quartil(df1_problema$DP3, "DP3 (grupo problema motor)")
 dif_quartil_DP4 <- dif_quartil(df1_problema$DP4, "DP4 (grupo problema motor)")
 dif_quartil_DP5 <- dif_quartil(df1_problema$DP5, "DP5 (grupo problema motor)")
+```
+
+# Módulo 2
+
+## Teste de normalidade
+
+```{r}
+
+df_all <- cbind(df1_controle,df1_problema)
+df_all_filter <- df_all |> select(-matches("^Tempo$"))
+
+#Aplicando o shapiro.test() em todas as colunas do dataframe
+teste_normalidade <- lapply(df_all_filter, shapiro.test)
+
+j <- 1
+k <- 1
+
+normais <- list()
+nomes <- vector()
+nao_normais <- list()
+nomes2 <- vector()
+
+#Se o p-value encontrado for maior do que 0.05, os dados seguem uma distribuição normal
+#Se for menor, segue uma distribuição não-normal
+
+for (i in 1:length(teste_normalidade)) {
+  if (teste_normalidade[[i]]$p.value > 0.05) {
+      normais[[j]] <- teste_normalidade[[i]]
+      nomes[j] <- names(teste_normalidade[i])
+      j <- j+1
+  } else {
+    nao_normais[[k]] <- teste_normalidade[[i]]
+    nomes2[k] <- names(teste_normalidade[i])
+    k <- k+1
+  }
+}
+names(normais) <- nomes
+names(nao_normais) <- nomes2
+
+if(length(normais) > 0){
+  print("Grupos que seguem distribuição normal:")
+  print(names(normais))
+}
+
+if(length(nao_normais) > 0){
+  print("Grupos que seguem distribuição não normal:")
+  print(names(nao_normais))
+}
+```
+
+## Teste de hipótese
+
+```{r}
+
 ```
