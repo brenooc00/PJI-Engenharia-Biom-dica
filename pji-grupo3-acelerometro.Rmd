@@ -14,6 +14,7 @@ output:
 
 ```{r message=FALSE, warning=FALSE}
 library(dygraphs)
+library(shiny)
 library(dplyr)
 library(ggplot2)
 ```
@@ -45,20 +46,24 @@ df1_problema[] <- lapply(df1_problema, as.numeric)
 
 ```{r}
 
+#Ajustes dos gráficos
+
 for (col in names(df1_controle)[-1]) {
   # Criar um gráfico para cada coluna
   dygraph(data.frame(time = df1_controle$Tempo, value = df1_controle[[col]]), main = paste("Gráfico de", col))|>
-    dyAxis("x", label = "Tempo (s)") |>
-    dyAxis("y", label = "Amplitude") |>
-    dyRangeSelector(dateWindow = c()) |> print()  # Para visualizar os gráficos no console do R
+    dyAxis("x", label = "Tempo (s)", labelHeight = 30) |>
+    dyAxis("y", label = "Amplitude", labelWidth = 30) |>
+    dyOptions(titleHeight = 35, labelsKMB = TRUE, axisLabelFontSize = 30) |>
+    print()  # Para visualizar os gráficos no console do R
 }
 
 for (col in names(df1_problema)[-1]) {
   # Criar um gráfico para cada coluna
   dygraph(data.frame(time = df1_problema$Tempo, value = df1_problema[[col]]), main = paste("Gráfico de", col))|>
-    dyAxis("x", label = "Tempo (s)") |>
-    dyAxis("y", label = "Amplitude") |>
-    dyRangeSelector(dateWindow = c()) |> print()  # Para visualizar os gráficos no console do R
+    dyAxis("x", label = "Tempo (s)", labelHeight = 30) |>
+    dyAxis("y", label = "Amplitude", labelWidth = 30) |>
+    dyOptions(titleHeight = 35, labelsKMB = TRUE, axisLabelFontSize = 30) |>
+    print()  # Para visualizar os gráficos no console do R
 }
 
 ```
@@ -79,8 +84,9 @@ fft_signal <- function(time, signal, name){
   #, theta = signal_theta[1:(length(signal_theta)/2)]
   
   plot_mag <- dygraph(df, main = paste("Gráfico de", name))|>
-    dyAxis("x", label = "Frequência (Hz)") |>
-    dyAxis("y", label = "Amplitude") |>
+    dyAxis("x", label = "Frequência (Hz)", labelHeight = 30) |>
+    dyAxis("y", label = "Amplitude", labelWidth = 30) |>
+    dyOptions(titleHeight = 35, labelsKMB = TRUE, axisLabelFontSize = 30) |>
     dyRangeSelector(dateWindow = c(-1,25)) |> print()
   
   #plot_theta <- ggplot2::ggplot(df) + geom_line(aes(x = ff, y = theta), color = "green") + xlab("Frequência (Hz)") + ylab("Fase") + labs(title = paste("Fase do sinal", name))  
@@ -184,6 +190,57 @@ dif_quartil_DP5 <- dif_quartil(df1_problema$DP5, "DP5 (grupo problema motor)")
 
 # Módulo 2
 
+## Verificando boxplots das características
+
+```{r}
+#Juntando todas as variáveis em um dataframe
+MAV_all <- c(MAV_C1, MAV_C2, MAV_C3, MAV_C4, MAV_C5,MAV_DP1, MAV_DP2, MAV_DP3, MAV_DP4, MAV_DP5)
+
+F80_all <- c(F80_C1, F80_C2, F80_C3, F80_C4, F80_C5, F80_DP1, F80_DP2, F80_DP3, F80_DP4, F80_DP5)
+
+dif_quartil_all <- c(dif_quartil_C1, dif_quartil_C2, dif_quartil_C3, dif_quartil_C4, dif_quartil_C5, dif_quartil_DP1, dif_quartil_DP2, dif_quartil_DP3, dif_quartil_DP4, dif_quartil_DP5)
+
+# Criando o dataframe com os atributos
+atributos <- data.frame(MAV = MAV_all, F80 = F80_all, DIF_QUARTIL = dif_quartil_all, Grupo = c(rep("Controle", 5), rep("Problema", 5)))
+
+#Gerando boxplots
+ggplot(atributos, aes(x = Grupo, y = DIF_QUARTIL)) +
+  geom_boxplot() +
+  labs(title = "Diferença interquatil", x = "Grupos", y = "Dif interquartil") +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 28), 
+    axis.title.x = element_text(size = 28),    
+    axis.title.y = element_text(size = 28), 
+    axis.text.x = element_text(size = 28),
+    axis.text.y = element_text(size = 28),
+    panel.grid = element_blank()
+  ) 
+
+ggplot(atributos, aes(x = Grupo, y = F80)) +
+  geom_boxplot() +
+  labs(title = "Frequência 80", x = "Grupos", y = "F80") +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 28), 
+    axis.title.x = element_text(size = 28),    
+    axis.title.y = element_text(size = 28), 
+    axis.text.x = element_text(size = 28),
+    axis.text.y = element_text(size = 28),
+    panel.grid = element_blank()
+  ) 
+
+ggplot(atributos, aes(x = Grupo, y = MAV)) +
+  geom_boxplot() +
+  labs(title = "Mean Absolute Value", x = "Grupos", y = "MAV") +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 28), 
+    axis.title.x = element_text(size = 28),    
+    axis.title.y = element_text(size = 28), 
+    axis.text.x = element_text(size = 28),
+    axis.text.y = element_text(size = 28),
+    panel.grid = element_blank()
+  ) 
+```
+
 ## Teste de normalidade
 
 ```{r}
@@ -191,7 +248,6 @@ dif_quartil_DP5 <- dif_quartil(df1_problema$DP5, "DP5 (grupo problema motor)")
 select_shapiro <- function(teste_normalidade, name){
   j <- 1
   k <- 1
-  
   normais <- list()
   nomes <- vector()
   nao_normais <- list()
@@ -225,16 +281,6 @@ select_shapiro <- function(teste_normalidade, name){
   }
 }
 
-#Juntando todas as variáveis
-MAV_all <- c(MAV_C1, MAV_C2, MAV_C3, MAV_C4, MAV_C5,MAV_DP1, MAV_DP2, MAV_DP3, MAV_DP4, MAV_DP5)
-
-F80_all <- c(F80_C1, F80_C2, F80_C3, F80_C4, F80_C5, F80_DP1, F80_DP2, F80_DP3, F80_DP4, F80_DP5)
-
-dif_quartil_all <- c(dif_quartil_C1, dif_quartil_C2, dif_quartil_C3, dif_quartil_C4, dif_quartil_C5, dif_quartil_DP1, dif_quartil_DP2, dif_quartil_DP3, dif_quartil_DP4, dif_quartil_DP5)
-
-# Criando o dataframe com os atributos
-atributos <- data.frame(MAV = MAV_all, F80 = F80_all, DIF_QUARTIL = dif_quartil_all, Grupo = c(rep("Controle", 5), rep("Problema", 5)))
-
 # Filtrando cada grupo
 atributos_controle <- atributos |> filter(Grupo == "Controle") |> select(-Grupo)
 atributos_problema <- atributos |> filter(Grupo == "Problema") |> select(-Grupo)
@@ -244,64 +290,54 @@ teste_normalidade_controle <- lapply(atributos_controle, shapiro.test)
 teste_normalidade_problema <- lapply(atributos_problema, shapiro.test)
 
 # Chamando a função para cada grupo
-select_shapiro(teste_normalidade_controle, "controle")
-select_shapiro(teste_normalidade_problema, "problema")
+select_shapiro(teste_normalidade_controle, "grupo controle")
+select_shapiro(teste_normalidade_problema, "grupo problema")
 
 ```
 
 ## Teste de hipótese - Distribuição normal
 
 ```{r}
-#Testes Paramétricos
-#Teste de t-student
+#Testes Paramétricos - Teste de t-student
 t.test(DIF_QUARTIL ~ Grupo, data = atributos, var.equal = TRUE)
 
-#Aqui já estamos verificando um sumário da ANOVA entre o atributo MIC1 e o Grupo. Ele nos informa
-#Se há diferença estatisticamente significativa entre os grupos ou não com base no Pr(>F)
+
+#Outros testes possíveis:
+#Verificando um sumário da ANOVA. 
+#Ele nos informa se há diferença estatisticamente significativa entre os grupos ou não com base no Pr(>F)
 #Se Pr(>F) for maior do que 0.05, não há diferença estatistica entre os grupos
 #Se Pr(>F) for menor do que 0.05, há diferença estatistica entre os grupos
-summary(aov(atributos$DIF_QUARTIL~atributos$Grupo))
+
+#summary(aov(atributos$DIF_QUARTIL~atributos$Grupo))
 
 #Sabendo se há ou não diferença entre os grupos, aplicamos o teste de Tukey para verificar o p-valor entre cada grupo (p adj)
-TukeyHSD(aov(atributos$DIF_QUARTIL~atributos$Grupo))
+
+#TukeyHSD(aov(atributos$DIF_QUARTIL~atributos$Grupo))
 ```
 
 ## Teste de hipótese - Distribuição não-normal
 
 ```{r}
-#Teste Mann-Whitney
+#Teste não paramétricos - Teste de Mann-Whitney
+print("-- F80 --")
 wilcox.test(F80 ~ Grupo, data = atributos)
-
-
+print("-- MAV --")
 wilcox.test(MAV ~ Grupo, data = atributos)
 
-#>2 Grupos: Kruskal-Wallis
+#Outros testes possíveis:
+#Teste Kruskal-Wallis
 #Ele nos informa se há diferença estatisticamente significativa entre os grupos ou não com base no p-value
 #Se o p-value for maior do que 0.05, não há diferença estatistica entre os grupos
 #Se o p-value for menor do que 0.05, há diferença estatistica entre os grupos
-kruskal.test(F80~Grupo, data = atributos)
-kruskal.test(MAV~Grupo, data = atributos)
 
-#Semelhante ao caso anterior, podemos verificar a diferença entre cada par de grupo individualmente
+#kruskal.test(F80~Grupo, data = atributos)
+#kruskal.test(MAV~Grupo, data = atributos)
+
+#Podemos verificar a diferença entre cada par de grupo individualmente
 #Utilizando o teste de Wilcoxon pareado (que fará a comparação par-a-par dos grupos)
-pairwise.wilcox.test(atributos$F80,atributos$Grupo,p.adjust.method="bonferroni")
 
-pairwise.wilcox.test(atributos$MAV,atributos$Grupo,p.adjust.method="bonferroni")
+#pairwise.wilcox.test(atributos$F80,atributos$Grupo,p.adjust.method="bonferroni")
 
+#pairwise.wilcox.test(atributos$MAV,atributos$Grupo,p.adjust.method="bonferroni")
 
-# Visualizando os boxplots das características ----------------------------
-#Aqui utilizamos a biblioteca ggplot pela praticidade em plotagem dos dados
-#Como queremos visualizar o boxplot, primeiro criamos a instância ggplot, determinando o conjunto de dados,
-#E qual coluna está nos eixos X e Y. Feito isso, iremos transformar esses dados em um boxplot utilizando o geom_boxplot()
-ggplot(atributos, aes(x = Grupo, y = DIF_QUARTIL)) +
-  geom_boxplot() +
-  theme_bw()  #O tema é só pra deixar tudo mais bonito mesmo
-
-ggplot(atributos, aes(x = Grupo, y = F80)) +
-  geom_boxplot() +
-  theme_bw()  #O tema é só pra deixar tudo mais bonito mesmo
-
-ggplot(atributos, aes(x = Grupo, y = MAV)) +
-  geom_boxplot() +
-  theme_bw()  #O tema é só pra deixar tudo mais bonito mesmo
 ```
