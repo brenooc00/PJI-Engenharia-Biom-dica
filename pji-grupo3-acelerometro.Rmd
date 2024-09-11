@@ -14,9 +14,8 @@ output:
 
 ```{r message=FALSE, warning=FALSE}
 library(dygraphs)
-#library(ggplot2)
 library(dplyr)
-#library(patchwork)
+library(ggplot2)
 ```
 
 # Módulo 1
@@ -170,7 +169,6 @@ dif_quartil <- function(signal_mag, name){
   print(paste("Diferença interquartil do sinal",name,":", round(inter_quartil,3)))
   return(inter_quartil)
 }
-
 dif_quartil_C1 <- dif_quartil(df1_controle$C1, "C1 (grupo controle)")
 dif_quartil_C2 <- dif_quartil(df1_controle$C2, "C2 (grupo controle)")
 dif_quartil_C3 <- dif_quartil(df1_controle$C3, "C3 (grupo controle)")
@@ -189,51 +187,121 @@ dif_quartil_DP5 <- dif_quartil(df1_problema$DP5, "DP5 (grupo problema motor)")
 ## Teste de normalidade
 
 ```{r}
-
-df_all <- cbind(df1_controle,df1_problema)
-df_all_filter <- df_all |> select(-matches("^Tempo$"))
-
-#Aplicando o shapiro.test() em todas as colunas do dataframe
-teste_normalidade <- lapply(df_all_filter, shapiro.test)
-
-j <- 1
-k <- 1
-
-normais <- list()
-nomes <- vector()
-nao_normais <- list()
-nomes2 <- vector()
-
-#Se o p-value encontrado for maior do que 0.05, os dados seguem uma distribuição normal
-#Se for menor, segue uma distribuição não-normal
-
-for (i in 1:length(teste_normalidade)) {
-  if (teste_normalidade[[i]]$p.value > 0.05) {
-      normais[[j]] <- teste_normalidade[[i]]
-      nomes[j] <- names(teste_normalidade[i])
-      j <- j+1
-  } else {
-    nao_normais[[k]] <- teste_normalidade[[i]]
-    nomes2[k] <- names(teste_normalidade[i])
-    k <- k+1
+# Função para selecionar e imprimir os resultados do Shapiro-Wilk
+select_shapiro <- function(teste_normalidade, name){
+  j <- 1
+  k <- 1
+  
+  normais <- list()
+  nomes <- vector()
+  nao_normais <- list()
+  nomes2 <- vector()
+  
+  # Verifica se o p-value encontrado for maior do que 0.05
+  # Se for, os dados seguem uma distribuição normal
+  # Se não for, seguem uma distribuição não-normal
+  for (i in 1:length(teste_normalidade)) {
+    if (teste_normalidade[[i]]$p.value > 0.05) {
+        normais[[j]] <- teste_normalidade[[i]]
+        nomes[j] <- names(teste_normalidade[i])
+        j <- j + 1
+    } else {
+      nao_normais[[k]] <- teste_normalidade[[i]]
+      nomes2[k] <- names(teste_normalidade[i])
+      k <- k + 1
+    }
+  }
+  names(normais) <- nomes
+  names(nao_normais) <- nomes2
+  
+  if(length(normais) > 0){
+    print(paste("Características do", name, "que seguem distribuição normal:"))
+    print(names(normais))
+  }
+  
+  if(length(nao_normais) > 0){
+    print(paste("Características do", name, "que seguem distribuição não-normal:"))
+    print(names(nao_normais))
   }
 }
-names(normais) <- nomes
-names(nao_normais) <- nomes2
 
-if(length(normais) > 0){
-  print("Grupos que seguem distribuição normal:")
-  print(names(normais))
-}
+#Juntando todas as variáveis
+MAV_all <- c(MAV_C1, MAV_C2, MAV_C3, MAV_C4, MAV_C5,MAV_DP1, MAV_DP2, MAV_DP3, MAV_DP4, MAV_DP5)
 
-if(length(nao_normais) > 0){
-  print("Grupos que seguem distribuição não normal:")
-  print(names(nao_normais))
-}
+F80_all <- c(F80_C1, F80_C2, F80_C3, F80_C4, F80_C5, F80_DP1, F80_DP2, F80_DP3, F80_DP4, F80_DP5)
+
+dif_quartil_all <- c(dif_quartil_C1, dif_quartil_C2, dif_quartil_C3, dif_quartil_C4, dif_quartil_C5, dif_quartil_DP1, dif_quartil_DP2, dif_quartil_DP3, dif_quartil_DP4, dif_quartil_DP5)
+
+# Criando o dataframe com os atributos
+atributos <- data.frame(MAV = MAV_all, F80 = F80_all, DIF_QUARTIL = dif_quartil_all, Grupo = c(rep("Controle", 5), rep("Problema", 5)))
+
+# Filtrando cada grupo
+atributos_controle <- atributos |> filter(Grupo == "Controle") |> select(-Grupo)
+atributos_problema <- atributos |> filter(Grupo == "Problema") |> select(-Grupo)
+
+# Aplicando o shapiro.test() em todas as colunas do dataframe
+teste_normalidade_controle <- lapply(atributos_controle, shapiro.test)
+teste_normalidade_problema <- lapply(atributos_problema, shapiro.test)
+
+# Chamando a função para cada grupo
+select_shapiro(teste_normalidade_controle, "controle")
+select_shapiro(teste_normalidade_problema, "problema")
+
 ```
 
-## Teste de hipótese
+## Teste de hipótese - Distribuição normal
 
 ```{r}
+#Testes Paramétricos
+#Teste de t-student
+t.test(DIF_QUARTIL ~ Grupo, data = atributos, var.equal = TRUE)
 
+#Aqui já estamos verificando um sumário da ANOVA entre o atributo MIC1 e o Grupo. Ele nos informa
+#Se há diferença estatisticamente significativa entre os grupos ou não com base no Pr(>F)
+#Se Pr(>F) for maior do que 0.05, não há diferença estatistica entre os grupos
+#Se Pr(>F) for menor do que 0.05, há diferença estatistica entre os grupos
+summary(aov(atributos$DIF_QUARTIL~atributos$Grupo))
+
+#Sabendo se há ou não diferença entre os grupos, aplicamos o teste de Tukey para verificar o p-valor entre cada grupo (p adj)
+TukeyHSD(aov(atributos$DIF_QUARTIL~atributos$Grupo))
+```
+
+## Teste de hipótese - Distribuição não-normal
+
+```{r}
+#Teste Mann-Whitney
+wilcox.test(F80 ~ Grupo, data = atributos)
+
+
+wilcox.test(MAV ~ Grupo, data = atributos)
+
+#>2 Grupos: Kruskal-Wallis
+#Ele nos informa se há diferença estatisticamente significativa entre os grupos ou não com base no p-value
+#Se o p-value for maior do que 0.05, não há diferença estatistica entre os grupos
+#Se o p-value for menor do que 0.05, há diferença estatistica entre os grupos
+kruskal.test(F80~Grupo, data = atributos)
+kruskal.test(MAV~Grupo, data = atributos)
+
+#Semelhante ao caso anterior, podemos verificar a diferença entre cada par de grupo individualmente
+#Utilizando o teste de Wilcoxon pareado (que fará a comparação par-a-par dos grupos)
+pairwise.wilcox.test(atributos$F80,atributos$Grupo,p.adjust.method="bonferroni")
+
+pairwise.wilcox.test(atributos$MAV,atributos$Grupo,p.adjust.method="bonferroni")
+
+
+# Visualizando os boxplots das características ----------------------------
+#Aqui utilizamos a biblioteca ggplot pela praticidade em plotagem dos dados
+#Como queremos visualizar o boxplot, primeiro criamos a instância ggplot, determinando o conjunto de dados,
+#E qual coluna está nos eixos X e Y. Feito isso, iremos transformar esses dados em um boxplot utilizando o geom_boxplot()
+ggplot(atributos, aes(x = Grupo, y = DIF_QUARTIL)) +
+  geom_boxplot() +
+  theme_bw()  #O tema é só pra deixar tudo mais bonito mesmo
+
+ggplot(atributos, aes(x = Grupo, y = F80)) +
+  geom_boxplot() +
+  theme_bw()  #O tema é só pra deixar tudo mais bonito mesmo
+
+ggplot(atributos, aes(x = Grupo, y = MAV)) +
+  geom_boxplot() +
+  theme_bw()  #O tema é só pra deixar tudo mais bonito mesmo
 ```
