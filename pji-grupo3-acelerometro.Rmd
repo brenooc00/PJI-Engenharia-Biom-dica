@@ -85,10 +85,10 @@ fft_signal <- function(time, signal, name){
   #, theta = signal_theta[1:(length(signal_theta)/2)]
   
   plot_mag <- dygraph(df, main = paste("Gráfico de", name))|>
-    dyAxis("x", label = "Frequência (Hz)", labelHeight = 30) |>
+    dyAxis("x", label = "Frequência (Hz)", labelHeight = 25) |>
     dyAxis("y", label = "Amplitude", labelWidth = 30) |>
-    dyOptions(titleHeight = 35, labelsKMB = TRUE, axisLabelFontSize = 30) |>
-    dyRangeSelector(dateWindow = c(-1,25)) |> print()
+    dyOptions(titleHeight = 35, labelsKMB = TRUE, axisLabelFontSize = 25) |>
+     print()
   
   #plot_theta <- ggplot2::ggplot(df) + geom_line(aes(x = ff, y = theta), color = "green") + xlab("Frequência (Hz)") + ylab("Fase") + labs(title = paste("Fase do sinal", name))  
   
@@ -377,45 +377,46 @@ df_filter_problema <- cbind(Tempo = df1_problema$Tempo, df_filter_problema)
 
 ```{r}
 
-fft_signal <- function(time, signal, name){
-  dt <- time[2] - time[1] #Resolução temporal
-  fs <- 1/dt #Frequência
-  rfs <- fs/length(time) #Resolução de frequência
-  final_frequency <- (length(time)-1) * rfs #Frequência final
-  ff <- seq(from = 0, to = final_frequency, by = rfs) #Vetor de frequência
-  signal_fft <- fft(signal) #Transformada de Fourier
-  signal_mag <- Mod(signal_fft) #Magnitude do sinal
-  signal_theta <- atan2(Im(signal_fft), Re(signal_fft)) #Fase do sinal
-  df <- data.frame(ff = ff[1:(length(ff)/2)],mag = signal_mag[1:(length(signal_mag)/2)])
-  #, theta = signal_theta[1:(length(signal_theta)/2)]
-  
-  plot_mag <- dygraph(df, main = paste("Gráfico de", name))|>
-    dyAxis("x", label = "Frequência (Hz)", labelHeight = 30) |>
-    dyAxis("y", label = "Amplitude", labelWidth = 30) |>
-    dyOptions(titleHeight = 35, labelsKMB = TRUE, axisLabelFontSize = 30) |>
-    dyRangeSelector(dateWindow = c(-1,25)) |> print()
-  
-  #plot_theta <- ggplot2::ggplot(df) + geom_line(aes(x = ff, y = theta), color = "green") + xlab("Frequência (Hz)") + ylab("Fase") + labs(title = paste("Fase do sinal", name))  
-  
-  #plot_all <- plot_mag/plot_theta
-  #print(plot_mag)
-  return (df)
-}
+#Aplicando para grupo controle
+df_fft_FiltControl <- lapply(names(df_filter_controle)[-1], function(col_name){
+  fft_signal(df_filter_controle$Tempo, df_filter_controle[[col_name]], paste("frequência", col_name))
+})
 
+df_fft_FiltControl <- data.frame(Freq = df_fft_FiltControl[[1]]$ff, lapply(df_fft_FiltControl, function(df) df[[2]]))
 
+colnames(df_fft_FiltControl)[-1] <- names(df_filter_controle)[-1]
 
-df_fft_FiltControl <- data.frame(lapply(names(df_filter_controle)[-1], function(col_name){
-  fft_signal(df1_problema[[col_name]], df1_problema$Tempo, n, f1, f2, col_name)
-}))
+#Aplicando para grupo problema
+df_fft_FiltProblem <- lapply(names(df_filter_problema)[-1], function(col_name){
+  fft_signal(df_filter_problema$Tempo, df_filter_problema[[col_name]], paste("frequência", col_name))
+})
 
-colnames(df_filter_problema) <- names(df1_problema)[-1]
+df_fft_FiltProblem <- data.frame(Freq = df_fft_FiltProblem[[1]]$ff, lapply(df_fft_FiltProblem, function(df) df[[2]]))
 
-df_filter_problema <- cbind(Tempo = df1_problema$Tempo, df_filter_problema)
+colnames(df_fft_FiltProblem)[-1] <- names(df_filter_problema)[-1]
+
 ```
 
 ## MAV
 
 ```{r}
+
+#Aplicando a controle
+atributos_filter_controle <- data.frame(lapply(names(df_filter_controle)[-1], function(col_name){
+  MAV(df_filter_controle[[col_name]], col_name)
+}))
+
+colnames(atributos_filter_controle) <- names(df_filter_controle)[-1]
+
+print("")
+#Aplicando ao grupo problema
+atributos_filter_problema <- data.frame(lapply(names(df_filter_problema)[-1], function(col_name){
+  MAV(df_filter_problema[[col_name]], col_name)
+}))
+
+colnames(atributos_filter_problema) <- names(df_filter_problema)[-1]
+
+
 
 ```
 
@@ -423,10 +424,28 @@ df_filter_problema <- cbind(Tempo = df1_problema$Tempo, df_filter_problema)
 
 ```{r}
 
+atributos_filter_controle[2,] <- lapply(names(df_fft_FiltControl)[-1], function(col_name){
+  F80(df_fft_FiltControl[[col_name]], df_fft_FiltControl$Freq, col_name)
+})
+
+print("")
+atributos_filter_problema[2,] <- lapply(names(df_fft_FiltProblem)[-1], function(col_name){
+  F80(df_fft_FiltProblem[[col_name]], df_fft_FiltProblem$Freq, col_name)
+})
+
 ```
 
 ## Diferença interquartil
 
 ```{r}
+atributos_filter_controle[3,] <- lapply(names(df_filter_controle)[-1], function(col_name){
+  dif_quartil(df_filter_controle[[col_name]], col_name)
+})
+
+print("")
+
+atributos_filter_problema[3,] <- lapply(names(df_filter_problema)[-1], function(col_name){
+  dif_quartil(df_filter_problema[[col_name]], col_name)
+})
 
 ```
