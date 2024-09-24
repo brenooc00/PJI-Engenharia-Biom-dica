@@ -17,6 +17,7 @@ library(dygraphs)
 library(shiny)
 library(dplyr)
 library(ggplot2)
+library(signal)
 ```
 
 # Módulo 1
@@ -90,7 +91,6 @@ fft_signal <- function(time, signal, name){
     dyRangeSelector(dateWindow = c(-1,25)) |> print()
   
   #plot_theta <- ggplot2::ggplot(df) + geom_line(aes(x = ff, y = theta), color = "green") + xlab("Frequência (Hz)") + ylab("Fase") + labs(title = paste("Fase do sinal", name))  
-  
   
   #plot_all <- plot_mag/plot_theta
   #print(plot_mag)
@@ -282,8 +282,12 @@ select_shapiro <- function(teste_normalidade, name){
 }
 
 # Filtrando cada grupo
-atributos_controle <- atributos |> filter(Grupo == "Controle") |> select(-Grupo)
-atributos_problema <- atributos |> filter(Grupo == "Problema") |> select(-Grupo)
+#atributos_controle <- atributos %>% filter(Grupo == "Controle") %>% select(-Grupo)
+#atributos_problema <- atributos %>% filter(Grupo == "Problema") %>% select(-Grupo)
+
+# Filtrando cada grupo usando subset()
+atributos_controle <- subset(atributos, Grupo == "Controle")[, -which(names(atributos) == "Grupo")]
+atributos_problema <- subset(atributos, Grupo == "Problema")[, -which(names(atributos) == "Grupo")]
 
 # Aplicando o shapiro.test() em todas as colunas do dataframe
 teste_normalidade_controle <- lapply(atributos_controle, shapiro.test)
@@ -300,19 +304,6 @@ select_shapiro(teste_normalidade_problema, "grupo problema")
 ```{r}
 #Testes Paramétricos - Teste de t-student
 t.test(DIF_QUARTIL ~ Grupo, data = atributos, var.equal = TRUE)
-
-
-#Outros testes possíveis:
-#Verificando um sumário da ANOVA. 
-#Ele nos informa se há diferença estatisticamente significativa entre os grupos ou não com base no Pr(>F)
-#Se Pr(>F) for maior do que 0.05, não há diferença estatistica entre os grupos
-#Se Pr(>F) for menor do que 0.05, há diferença estatistica entre os grupos
-
-summary(aov(atributos$DIF_QUARTIL~atributos$Grupo))
-
-#Sabendo se há ou não diferença entre os grupos, aplicamos o teste de Tukey para verificar o p-valor entre cada grupo (p adj)
-
-TukeyHSD(aov(atributos$DIF_QUARTIL~atributos$Grupo))
 ```
 
 ## Teste de hipótese - Distribuição não-normal
@@ -323,21 +314,119 @@ print("-- F80 --")
 wilcox.test(F80 ~ Grupo, data = atributos)
 print("-- MAV --")
 wilcox.test(MAV ~ Grupo, data = atributos)
+```
 
-#Outros testes possíveis:
-#Teste Kruskal-Wallis
-#Ele nos informa se há diferença estatisticamente significativa entre os grupos ou não com base no p-value
-#Se o p-value for maior do que 0.05, não há diferença estatistica entre os grupos
-#Se o p-value for menor do que 0.05, há diferença estatistica entre os grupos
+# Módulo 3
 
-kruskal.test(F80~Grupo, data = atributos)
-kruskal.test(MAV~Grupo, data = atributos)
+## Função para filtro passa faixa
 
-#Podemos verificar a diferença entre cada par de grupo individualmente
-#Utilizando o teste de Wilcoxon pareado (que fará a comparação par-a-par dos grupos)
+```{r}
 
-pairwise.wilcox.test(atributos$F80,atributos$Grupo,p.adjust.method="bonferroni")
+filtro <- function(signal, time, ordem, Fmin, Fmax, name){
+  dt <- time[2] - time[1] #Resolução temporal
+  Fs <- 1/dt #Frequência
+  # For digital filters, W must be between 0 and 1 where 1 is the
+  # Nyquist frequency
+  W <- c(Fmin, Fmax)/(Fs/2)
+  bt <- butter(ordem, W, type = "pass") # cálculo dos coeficientes do fitro
+  #y_filt <- filter(filt = bt, signal)
+  y_filt <- filtfilt(filt = bt, signal)
+  
+  df <- data.frame(time, y_filt)
+  
+  dygraph(df, main = paste("Gráfico grupo Controle", name))|>
+    dyAxis("x", label = "Tempo (s)", labelHeight = 30) |>
+    dyAxis("y", label = "Amplitude", labelWidth = 30) |>
+    dyOptions(titleHeight = 35, labelsKMB = TRUE, axisLabelFontSize = 30) |> print()
+  
+  return(y_filt)
+  #freqz(filt = bt, Fs = Fs)
 
-pairwise.wilcox.test(atributos$MAV,atributos$Grupo,p.adjust.method="bonferroni")
+}
+```
+
+## Aplicando filtro
+
+```{r}
+n <- 4 #Ordem do filtro
+f1 <- 1 #Frequência de corte inferior
+f2 <- 16 #Frequência de corte superior
+
+#C1_filter <- filtro(df1_controle$C1, df1_controle$Tempo, n, f1, f2)
+
+#Aplicando a todos do grupo controle
+df_filter_controle <- data.frame(lapply(names(df1_controle)[-1], function(col_name){
+  filtro(df1_controle[[col_name]], df1_controle$Tempo, n, f1, f2, col_name)
+}))
+
+colnames(df_filter_controle) <- names(df1_controle)[-1]
+
+df_filter_controle <- cbind(Tempo = df1_controle$Tempo, df_filter_controle)
+
+#Aplicando a todos do grupo problema
+df_filter_problema <- data.frame(lapply(names(df1_problema)[-1], function(col_name){
+  filtro(df1_problema[[col_name]], df1_problema$Tempo, n, f1, f2, col_name)
+}))
+
+colnames(df_filter_problema) <- names(df1_problema)[-1]
+
+df_filter_problema <- cbind(Tempo = df1_problema$Tempo, df_filter_problema)
+```
+
+## Espectro do sinal
+
+```{r}
+
+fft_signal <- function(time, signal, name){
+  dt <- time[2] - time[1] #Resolução temporal
+  fs <- 1/dt #Frequência
+  rfs <- fs/length(time) #Resolução de frequência
+  final_frequency <- (length(time)-1) * rfs #Frequência final
+  ff <- seq(from = 0, to = final_frequency, by = rfs) #Vetor de frequência
+  signal_fft <- fft(signal) #Transformada de Fourier
+  signal_mag <- Mod(signal_fft) #Magnitude do sinal
+  signal_theta <- atan2(Im(signal_fft), Re(signal_fft)) #Fase do sinal
+  df <- data.frame(ff = ff[1:(length(ff)/2)],mag = signal_mag[1:(length(signal_mag)/2)])
+  #, theta = signal_theta[1:(length(signal_theta)/2)]
+  
+  plot_mag <- dygraph(df, main = paste("Gráfico de", name))|>
+    dyAxis("x", label = "Frequência (Hz)", labelHeight = 30) |>
+    dyAxis("y", label = "Amplitude", labelWidth = 30) |>
+    dyOptions(titleHeight = 35, labelsKMB = TRUE, axisLabelFontSize = 30) |>
+    dyRangeSelector(dateWindow = c(-1,25)) |> print()
+  
+  #plot_theta <- ggplot2::ggplot(df) + geom_line(aes(x = ff, y = theta), color = "green") + xlab("Frequência (Hz)") + ylab("Fase") + labs(title = paste("Fase do sinal", name))  
+  
+  #plot_all <- plot_mag/plot_theta
+  #print(plot_mag)
+  return (df)
+}
+
+
+
+df_fft_FiltControl <- data.frame(lapply(names(df_filter_controle)[-1], function(col_name){
+  fft_signal(df1_problema[[col_name]], df1_problema$Tempo, n, f1, f2, col_name)
+}))
+
+colnames(df_filter_problema) <- names(df1_problema)[-1]
+
+df_filter_problema <- cbind(Tempo = df1_problema$Tempo, df_filter_problema)
+```
+
+## MAV
+
+```{r}
+
+```
+
+## F80
+
+```{r}
+
+```
+
+## Diferença interquartil
+
+```{r}
 
 ```
