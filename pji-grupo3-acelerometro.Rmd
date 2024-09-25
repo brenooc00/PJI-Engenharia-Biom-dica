@@ -334,13 +334,13 @@ filtro <- function(signal, time, ordem, Fmin, Fmax, name){
   
   df <- data.frame(time, y_filt)
   
-  dygraph(df, main = paste("Gráfico grupo Controle", name))|>
+  dygraph(df, main = paste("Gráfico grupo ", name))|>
     dyAxis("x", label = "Tempo (s)", labelHeight = 30) |>
     dyAxis("y", label = "Amplitude", labelWidth = 30) |>
     dyOptions(titleHeight = 35, labelsKMB = TRUE, axisLabelFontSize = 30) |> print()
   
-  return(y_filt)
   #freqz(filt = bt, Fs = Fs)
+  return(y_filt)
 
 }
 ```
@@ -356,7 +356,7 @@ f2 <- 16 #Frequência de corte superior
 
 #Aplicando a todos do grupo controle
 df_filter_controle <- data.frame(lapply(names(df1_controle)[-1], function(col_name){
-  filtro(df1_controle[[col_name]], df1_controle$Tempo, n, f1, f2, col_name)
+  filtro(df1_controle[[col_name]], df1_controle$Tempo, n, f1, f2,paste("Controle", col_name))
 }))
 
 colnames(df_filter_controle) <- names(df1_controle)[-1]
@@ -365,7 +365,7 @@ df_filter_controle <- cbind(Tempo = df1_controle$Tempo, df_filter_controle)
 
 #Aplicando a todos do grupo problema
 df_filter_problema <- data.frame(lapply(names(df1_problema)[-1], function(col_name){
-  filtro(df1_problema[[col_name]], df1_problema$Tempo, n, f1, f2, col_name)
+  filtro(df1_problema[[col_name]], df1_problema$Tempo, n, f1, f2, paste("Problema Motor", col_name))
 }))
 
 colnames(df_filter_problema) <- names(df1_problema)[-1]
