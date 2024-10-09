@@ -190,7 +190,7 @@ dif_quartil_DP5 <- dif_quartil(df1_problema$DP5, "DP5 (grupo problema motor)")
 
 # Módulo 2
 
-## Verificando boxplots das características
+## Boxplots das características
 
 ```{r}
 #Juntando todas as variáveis em um dataframe
@@ -448,4 +448,86 @@ atributos_filter_problema[3,] <- lapply(names(df_filter_problema)[-1], function(
   dif_quartil(df_filter_problema[[col_name]], col_name)
 })
 
+```
+
+# Módulo 4
+
+## Organizando atributos filtrados
+
+```{r}
+atributos_filter_controle <- as.data.frame(t(atributos_filter_controle))
+
+atributos_filter_problema <- as.data.frame(t(atributos_filter_problema))
+
+colnames(atributos_filter_controle) <- c("MAV", "F80", "DIF_QUARTIL")
+colnames(atributos_filter_problema) <- c("MAV", "F80", "DIF_QUARTIL")
+
+atributos_filter <- rbind(atributos_filter_controle, atributos_filter_problema)
+
+atributos_filter$Grupo <- c(rep("Controle", 5), rep("Problema", 5))
+```
+
+## Boxplots das características
+
+```{r}
+#Gerando boxplots
+ggplot(atributos_filter, aes(x = Grupo, y = DIF_QUARTIL)) +
+  geom_boxplot() +
+  labs(title = "Diferença interquatil", x = "Grupos", y = "Dif interquartil") +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 28), 
+    axis.title.x = element_text(size = 28),    
+    axis.title.y = element_text(size = 28), 
+    axis.text.x = element_text(size = 28),
+    axis.text.y = element_text(size = 28),
+    panel.grid = element_blank()
+  ) 
+
+ggplot(atributos_filter, aes(x = Grupo, y = F80)) +
+  geom_boxplot() +
+  labs(title = "Frequência 80", x = "Grupos", y = "F80") +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 28), 
+    axis.title.x = element_text(size = 28),    
+    axis.title.y = element_text(size = 28), 
+    axis.text.x = element_text(size = 28),
+    axis.text.y = element_text(size = 28),
+    panel.grid = element_blank()
+  ) 
+
+ggplot(atributos_filter, aes(x = Grupo, y = MAV)) +
+  geom_boxplot() +
+  labs(title = "Mean Absolute Value", x = "Grupos", y = "MAV") +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 28), 
+    axis.title.x = element_text(size = 28),    
+    axis.title.y = element_text(size = 28), 
+    axis.text.x = element_text(size = 28),
+    axis.text.y = element_text(size = 28),
+    panel.grid = element_blank()
+  ) 
+```
+
+## Teste de normalidade
+
+```{r}
+# Aplicando o shapiro.test() em todas as colunas do dataframe
+test_normal_filt_ct <- lapply(atributos_filter_controle, shapiro.test)
+test_normal_filt_pb <- lapply(atributos_filter_problema, shapiro.test)
+
+# Chamando a função para cada grupo
+select_shapiro(test_normal_filt_ct, "grupo controle")
+select_shapiro(test_normal_filt_pb, "grupo problema")
+```
+
+## Teste de hipótese - Distribuição normal
+
+```{r}
+#Testes Paramétricos - Teste de t-student
+print("MAV")
+t.test(MAV ~ Grupo, data = atributos_filter, var.equal = TRUE)
+print("F80")
+t.test(F80 ~ Grupo, data = atributos_filter, var.equal = TRUE)
+print("DIFERENÇA INTERQUARTIL")
+t.test(DIF_QUARTIL ~ Grupo, data = atributos_filter, var.equal = TRUE)
 ```
